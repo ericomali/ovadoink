@@ -109,7 +109,11 @@ if domani:
     mfd.close()
 
 # remove old tar and create new one in place
-fullpath = "%s/%s" % (oldwd, ova)
+fullpath = None
+if ova[0] == '/':
+    fullpath = ova
+else:
+    fullpath = "%s/%s" % (oldwd, ova)
 os.remove(fullpath)
 tar = tarfile.open(name=fullpath, mode='w')
 tar.add(ovf)
