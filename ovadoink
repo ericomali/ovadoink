@@ -51,6 +51,7 @@ import tarfile
 import tempfile
 
 domani = 1
+verbose = 1
 
 ova = sys.argv[1]
 pfd = open(ova, mode='r')
@@ -71,7 +72,7 @@ checko = re.compile(r'.*\.[Oo][Vv][Ff]$')
 checkm = re.compile(r'.*\.[Mm][Ff]$')
 checkb = re.compile(r'.*\/\._.*')
 
-# special case OVF manifest file, and remove AppleDouble aka ._ files outright
+# special case OVF and manifest, and remove AppleDouble aka ._ files outright
 for x in flist:
     if checko.match(x):
         ovf = x
@@ -84,7 +85,8 @@ flist.remove(ovf)
 if mf:
     flist.remove(mf)
 for x in badlist:
-    print "removing bogus file " + x
+    if verbose:
+        print "removing bogus file " + x
     flist.remove(x)
 
 if ovf == None:
