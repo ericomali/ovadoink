@@ -33,6 +33,7 @@
 # as the author needs them; suggestions and improvements are more than welcome.
 #
 # HISTORY
+# 0.2 - Added -t for hardware type and only update manifest if -m specified
 # 0.1 - Initial version, no options, simply updates signatures in manifest file
 #
 # PREHISTORIC
@@ -41,7 +42,14 @@
 # have been found publicly floating about. That employer is now defunct and is
 # believed to have supported the release of vmxconv, but any users of that tool
 # would probably be better served by moving to this one.
+#
+# TODO
+# Option for removing audio hardware
+# Option for altering ethernet device types
+# Read only mode with option to validate manifests
+# Warn on bogus tar content
 
+import argparse
 import hashlib
 import os
 import re
@@ -49,11 +57,18 @@ import shutil
 import sys
 import tarfile
 import tempfile
+import xml.etree.ElementTree as ET
 
-domani = 1
 verbose = 1
+version = 0.2
 
-ova = sys.argv[1]
+parser = argparse.ArgumentParser(description="swiss army knife for OVA manipulation")
+parser.add_argument('-m', '--manifest', action='store_true', help='generate manifest')
+parser.add_argument('-t', '--type', metavar='HWTYPE', nargs=1, help='write new hardware type string')
+parser.add_argument('ova', metavar='file.ova', help='file name')
+args = parser.parse_args()
+
+ova = args.ova
 pfd = open(ova, mode='r')
 tar = tarfile.open(fileobj=pfd, mode='r')
 temp = tempfile.mkdtemp()
@@ -94,7 +109,7 @@ if ovf == None:
     sys.exit(1)
 
 # generate manifest if desired
-if domani:
+if args.manifest:
     mf = ovf[:-3]
     mf = mf + "mf"  # do not care
 
@@ -110,6 +125,16 @@ if domani:
             mfd.write(str)
     mfd.close()
 
+# fudge hardware type if requested
+if args.type:
+    xml = ET.parse(ovf)
+    nsf = re.compile(r'\{.*\}(.*)')
+    for x in xml.iter():
+        res = nsf.search(x.tag)
+        if res.group(1) == "VirtualSystemType":
+            x.text = args.type[0]
+    xml.write(ovf)
+
 # remove old tar and create new one in place
 fullpath = None
 if ova[0] == '/':
@@ -119,7 +144,7 @@ else:
 os.remove(fullpath)
 tar = tarfile.open(name=fullpath, mode='w')
 tar.add(ovf)
-if domani:
+if args.manifest:
     tar.add(mf)
 for x in flist:
     tar.add(x, recursive=False)
