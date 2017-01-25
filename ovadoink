@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+#
+# LICENSE
+# Copyright 2017 Eric Melville
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# DESCRIPTION
+# ovadoink - swiss army knife for OVA manipulation
+#
+# There are many, many features missing from ovftool. This is an attempt to
+# fill in some of them, but is in no way exhaustive. Features tend to get added
+# as the author needs them; suggestions and improvements are more than welcome.
+#
+# HISTORY
+# 0.1 - Initial version, no options, simply updates signatures in manifest file
+#
+# PREHISTORIC
+# The author created a previous incarnation of this tool called vmxconv for an
+# employer, which was not licensed for open distribution though some copies
+# have been found publicly floating about. That employer is now defunct and is
+# believed to have supported the release of vmxconv, but any users of that tool
+# would probably be better served by moving to this one.
+
+import hashlib
+import os
+import re
+import shutil
+import sys
+import tarfile
+import tempfile
+
+domani = 1
+
+ova = sys.argv[1]
+pfd = open(ova, mode='r')
+tar = tarfile.open(fileobj=pfd, mode='r')
+temp = tempfile.mkdtemp()
+
+flist = tar.getnames()
+tar.extractall(path=temp)
+tar.close()
+pfd.close()
+oldwd = os.getcwd()
+os.chdir(temp)
+
+ovf = None
+mf = None
+badlist = []
+checko = re.compile(r'.*\.[Oo][Vv][Ff]$')
+checkm = re.compile(r'.*\.[Mm][Ff]$')
+checkb = re.compile(r'.*\/\._.*')
+
+# special case OVF manifest file, and remove AppleDouble aka ._ files outright
+for x in flist:
+    if checko.match(x):
+        ovf = x
+    if checkm.match(x):
+        mf = x
+    if checkb.match(x):
+        badlist.append(x)
+
+flist.remove(ovf)
+if mf:
+    flist.remove(mf)
+for x in badlist:
+    print "removing bogus file " + x
+    flist.remove(x)
+
+if ovf == None:
+    print "Error, no OVF found in OVA."
+    sys.exit(1)
+
+# generate manifest if desired
+if domani:
+    mf = ovf[:-3]
+    mf = mf + "mf"  # do not care
+
+    if os.path.isfile(mf):
+        os.remove(mf)
+    mfd = open(mf, 'w')
+    for x in flist:
+        if os.path.isfile(x):
+            xfd = open(x, 'r')
+            dat = xfd.read()
+            hash = hashlib.sha256(dat)
+            str = "SHA256(%s)= %s\n" % (x, hash.hexdigest())
+            mfd.write(str)
+    mfd.close()
+
+# remove old tar and create new one in place
+fullpath = "%s/%s" % (oldwd, ova)
+os.remove(fullpath)
+tar = tarfile.open(name=fullpath, mode='w')
+tar.add(ovf)
+if domani:
+    tar.add(mf)
+for x in flist:
+    tar.add(x, recursive=False)
+tar.close()
+
+# remove temp files
+shutil.rmtree(temp)
