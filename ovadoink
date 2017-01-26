@@ -45,7 +45,7 @@
 #
 # TODO
 # Option for removing audio hardware
-# Option for altering ethernet device types
+# Preserve XML namespace names
 # Read only mode with option to validate manifests
 # Warn on bogus tar content
 
@@ -64,6 +64,7 @@ version = 0.2
 
 parser = argparse.ArgumentParser(description="swiss army knife for OVA manipulation")
 parser.add_argument('-m', '--manifest', action='store_true', help='generate manifest')
+parser.add_argument('-n', '--netif', help='set interface type eg. "82540EM"')
 parser.add_argument('-t', '--type', metavar='HWTYPE', help='set hardware type eg. "vmx-11"')
 parser.add_argument('ova', metavar='file.ova', help='file name')
 args = parser.parse_args()
@@ -133,6 +134,16 @@ if args.type:
         res = nsf.search(x.tag)
         if res.group(1) == "VirtualSystemType":
             x.text = args.type
+    xml.write(ovf)
+
+# rewrite network adaptor types if requested
+if args.netif:
+    xml = ET.parse(ovf)
+    nsf = re.compile(r'\{.*\}(.*)')
+    for x in xml.iter():
+        res = nsf.search(x.tag)
+        if res.group(1) == "Adapter":
+            x.attrib['type'] = args.netif
     xml.write(ovf)
 
 # remove old tar and create new one in place
