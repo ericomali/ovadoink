@@ -64,7 +64,7 @@ version = 0.2
 
 parser = argparse.ArgumentParser(description="swiss army knife for OVA manipulation")
 parser.add_argument('-m', '--manifest', action='store_true', help='generate manifest')
-parser.add_argument('-t', '--type', metavar='HWTYPE', nargs=1, help='write new hardware type string')
+parser.add_argument('-t', '--type', metavar='HWTYPE', help='set hardware type eg. "vmx-11"')
 parser.add_argument('ova', metavar='file.ova', help='file name')
 args = parser.parse_args()
 
@@ -132,7 +132,7 @@ if args.type:
     for x in xml.iter():
         res = nsf.search(x.tag)
         if res.group(1) == "VirtualSystemType":
-            x.text = args.type[0]
+            x.text = args.type
     xml.write(ovf)
 
 # remove old tar and create new one in place
