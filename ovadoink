@@ -47,7 +47,6 @@
 # Option for removing audio hardware
 # Preserve XML namespace names
 # Read only mode with option to validate manifests
-# Warn on bogus tar content
 
 import argparse
 import hashlib
@@ -75,6 +74,14 @@ tar = tarfile.open(fileobj=pfd, mode='r')
 temp = tempfile.mkdtemp()
 
 flist = tar.getnames()
+badfile = False
+for x in flist:
+    if x[0] == '/' or x[0:2] == '..':
+        badfile = True
+if len(flist) < 2 or badfile == True:
+    print "OVA file appears bougs"
+    sys.exit(1)
+
 tar.extractall(path=temp)
 tar.close()
 pfd.close()
