@@ -47,6 +47,7 @@
 # Option for removing audio hardware
 # Preserve XML namespace names
 # Read only mode with option to validate manifests
+# Verbose vs quiet
 
 import argparse
 import hashlib
@@ -58,10 +59,18 @@ import tarfile
 import tempfile
 import xml.etree.ElementTree as ET
 
-verbose = 1
+name = 'ovadoink'
+desc = 'swiss army knife for OVA manipulation'
 version = 0.2
 
-parser = argparse.ArgumentParser(description="swiss army knife for OVA manipulation")
+verbose = 1
+
+if sys.argv[1] == '--version':
+    print "%s - %s" % (name, desc)
+    print "version %s" % (str(version))
+    sys.exit(0)
+
+parser = argparse.ArgumentParser(description=desc)
 parser.add_argument('-m', '--manifest', action='store_true', help='generate manifest')
 parser.add_argument('-n', '--netif', help='set interface type eg. "82540EM"')
 parser.add_argument('-t', '--type', metavar='HWTYPE', help='set hardware type eg. "vmx-11"')
@@ -109,7 +118,7 @@ if mf:
     flist.remove(mf)
 for x in badlist:
     if verbose:
-        print "removing bogus file " + x
+        print "removing bogus file %s" % (x)
     flist.remove(x)
 
 if ovf == None:
