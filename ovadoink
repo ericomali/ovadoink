@@ -137,8 +137,8 @@ if args.manifest:
         if os.path.isfile(x):
             xfd = open(x, 'r')
             dat = xfd.read()
-            hash = hashlib.sha256(dat)
-            str = "SHA256(%s)= %s\n" % (x, hash.hexdigest())
+            hash = hashlib.sha1(dat)
+            str = "SHA1(%s)= %s\n" % (x, hash.hexdigest())
             mfd.write(str)
     mfd.close()
 
