@@ -113,17 +113,20 @@ for x in flist:
     if checkb.match(x):
         badlist.append(x)
 
+if ovf == None:
+    print "Error, no OVF found in OVA."
+    sys.exit(1)
+
+# ensure ovf is first in the archive
 flist.remove(ovf)
+flist.insert(0, ovf)
+
 if mf:
     flist.remove(mf)
 for x in badlist:
     if verbose:
         print "removing bogus file %s" % (x)
     flist.remove(x)
-
-if ovf == None:
-    print "Error, no OVF found in OVA."
-    sys.exit(1)
 
 # generate manifest if desired
 if args.manifest:
@@ -141,6 +144,7 @@ if args.manifest:
             str = "SHA1(%s)= %s\n" % (x, hash.hexdigest())
             mfd.write(str)
     mfd.close()
+    flist.insert(1, mf)
 
 # fudge hardware type if requested
 if args.type:
@@ -170,9 +174,6 @@ else:
     fullpath = "%s/%s" % (oldwd, ova)
 os.remove(fullpath)
 tar = tarfile.open(name=fullpath, mode='w')
-tar.add(ovf)
-if args.manifest:
-    tar.add(mf)
 for x in flist:
     tar.add(x, recursive=False)
 tar.close()
