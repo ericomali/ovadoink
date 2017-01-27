@@ -46,7 +46,6 @@
 # TODO
 # Option for removing audio hardware
 # Preserve XML namespace names
-# Read only mode with option to validate manifests
 # Verbose vs quiet
 
 import argparse
@@ -59,11 +58,35 @@ import tarfile
 import tempfile
 import xml.etree.ElementTree as ET
 
+def checksha(filename, manifest, verbose):
+    mfd = open(manifest, 'r')
+    cre = re.compile(r'SHA(\d*)\((.*)\)=\ (.*)')
+
+    line = mfd.readline()
+    while line:
+        res = cre.match(line)
+        if res.group(2) == filename:
+            sha = res.group(1)
+            hash = res.group(3)
+        line = mfd.readline()
+
+    fd = open(filename, 'r')
+    dat = fd.read()
+    if sha == "1":
+        calc = hashlib.sha1(dat)
+    elif sha == "256":
+        calc = hashlib.sha256(dat)
+    else:
+        calc = hashlib.sha1("bogus")
+
+    return calc.hexdigest() == hash
+
 name = 'ovadoink'
 desc = 'swiss army knife for OVA manipulation'
 version = 0.2
 
-verbose = 1
+verbose = True
+verify = False
 
 if sys.argv[1] == '--version':
     print "%s - %s" % (name, desc)
@@ -76,6 +99,10 @@ parser.add_argument('-n', '--netif', help='set interface type eg. "82540EM"')
 parser.add_argument('-t', '--type', metavar='HWTYPE', help='set hardware type eg. "vmx-11"')
 parser.add_argument('ova', metavar='file.ova', help='file name')
 args = parser.parse_args()
+
+# somewhat convoluted, but set verify if no write options were specified
+if not args.type and not args.netif and not args.manifest:
+    verify = True
 
 ova = args.ova
 pfd = open(ova, mode='r')
@@ -124,7 +151,9 @@ flist.insert(0, ovf)
 if mf:
     flist.remove(mf)
 for x in badlist:
-    if verbose:
+    if verbose and verify:
+        print "ignoring bogus file %s" % (x)
+    elif verbose:
         print "removing bogus file %s" % (x)
     flist.remove(x)
 
@@ -172,11 +201,23 @@ if ova[0] == '/':
     fullpath = ova
 else:
     fullpath = "%s/%s" % (oldwd, ova)
-os.remove(fullpath)
-tar = tarfile.open(name=fullpath, mode='w')
-for x in flist:
-    tar.add(x, recursive=False)
-tar.close()
+
+# well unless it was only a verification operation
+if verify == False:
+    os.remove(fullpath)
+    tar = tarfile.open(name=fullpath, mode='w')
+    for x in flist:
+        tar.add(x, recursive=False)
+    tar.close()
+else:
+    allgood = True
+    for x in flist:
+        if checksha(x, mf, verbose) == False:
+            allgood = False
+
+    if allgood == False:
+        print "Manifest verification failed."
+        sys.exit(1)
 
 # remove temp files
 shutil.rmtree(temp)
