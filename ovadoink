@@ -45,7 +45,6 @@
 #
 # TODO
 # Option for removing audio hardware
-# Preserve XML namespace names
 # Verbose vs quiet
 
 import argparse
@@ -56,7 +55,6 @@ import shutil
 import sys
 import tarfile
 import tempfile
-import xml.etree.ElementTree as ET
 
 def checksha(filename, manifest, verbose):
     mfd = open(manifest, 'r')
@@ -107,6 +105,18 @@ args = parser.parse_args()
 # somewhat convoluted, but set verify if no write options were specified
 if not args.type and not args.netif and not args.manifest:
     verify = True
+
+# load up xml parser
+limited = False
+try:
+    from lxml import etree as ET
+    if verbose:
+        print "Using lxml for handling XML content."
+except ImportError:
+    import xml.etree.ElementTree as ET
+    limited = True
+    if verbose:
+        print "Using ElementTree for XML, functionality limited."
 
 ova = args.ova
 pfd = open(ova, mode='r')
