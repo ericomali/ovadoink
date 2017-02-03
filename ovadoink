@@ -172,24 +172,6 @@ for x in badlist:
         print "removing bogus file %s" % (x)
     flist.remove(x)
 
-# generate manifest if desired
-if args.manifest:
-    mf = ovf[:-3]
-    mf = mf + "mf"  # do not care
-
-    if os.path.isfile(mf):
-        os.remove(mf)
-    mfd = open(mf, 'w')
-    for x in flist:
-        if os.path.isfile(x):
-            xfd = open(x, 'r')
-            dat = xfd.read()
-            hash = hashlib.sha1(dat)
-            str = "SHA1(%s)= %s\n" % (x, hash.hexdigest())
-            mfd.write(str)
-    mfd.close()
-    flist.insert(1, mf)
-
 # fudge hardware type if requested
 if args.type:
     xml = ET.parse(ovf)
@@ -209,6 +191,24 @@ if args.netif:
         if res.group(1) == "Adapter":
             x.attrib['type'] = args.netif
     xml.write(ovf)
+
+# generate manifest if desired
+if args.manifest:
+    mf = ovf[:-3]
+    mf = mf + "mf"  # do not care
+
+    if os.path.isfile(mf):
+        os.remove(mf)
+    mfd = open(mf, 'w')
+    for x in flist:
+        if os.path.isfile(x):
+            xfd = open(x, 'r')
+            dat = xfd.read()
+            hash = hashlib.sha1(dat)
+            str = "SHA1(%s)= %s\n" % (x, hash.hexdigest())
+            mfd.write(str)
+    mfd.close()
+    flist.insert(1, mf)
 
 # remove old tar and create new one in place
 fullpath = None
