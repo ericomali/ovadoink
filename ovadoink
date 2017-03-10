@@ -100,11 +100,12 @@ parser = argparse.ArgumentParser(description=desc)
 parser.add_argument('-m', '--manifest', action='store_true', help='generate manifest')
 parser.add_argument('-n', '--netif', help='set interface type eg. "82540EM"')
 parser.add_argument('-t', '--type', metavar='HWTYPE', help='set hardware type eg. "vmx-11"')
+parser.add_argument('-r', '--rename', metavar='NAME', help='set new VM name')
 parser.add_argument('ova', metavar='file.ova', help='file name')
 args = parser.parse_args()
 
 # somewhat convoluted, but set verify if no write options were specified
-if not args.type and not args.netif and not args.manifest:
+if not args.type and not args.netif and not args.manifest and not args.rename:
     verify = True
 
 # load up xml parser
@@ -190,6 +191,23 @@ if args.netif:
         res = nsf.search(x.tag)
         if res.group(1) == "Adapter":
             x.attrib['type'] = args.netif
+    xml.write(ovf)
+
+# rename VM if requested, and the name is in three places so far
+if args.rename:
+    xml = ET.parse(ovf)
+    nsf = re.compile(r'\{.*\}(.*)')
+    for x in xml.iter():
+        res = nsf.search(x.tag)
+        if res.group(1) == "VirtualSystemIdentifier":
+            x.text = args.rename
+
+        if res.group(1) == "Machine":
+            x.attrib['name'] = args.rename
+
+        if res.group(1) == "VirtualSystem":
+            for key in x.attrib:
+                x.attrib[key] = args.rename
     xml.write(ovf)
 
 # generate manifest if desired
