@@ -131,7 +131,7 @@ for x in flist:
     if x[0] == '/' or x[0:2] == '..':
         badfile = True
 if len(flist) < 2 or badfile == True:
-    print "OVA file appears bougs"
+    print "OVA file appears bogus"
     sys.exit(1)
 
 tar.extractall(path=temp)
