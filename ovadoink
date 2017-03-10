@@ -91,7 +91,7 @@ version = 0.3
 verbose = True
 verify = False
 
-if sys.argv[1] == '--version':
+if len(sys.argv) != 1 and sys.argv[1] == '--version':
     print "%s - %s" % (name, desc)
     print "version %s" % (str(version))
     sys.exit(0)
