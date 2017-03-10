@@ -33,6 +33,7 @@
 # as the author needs them; suggestions and improvements are more than welcome.
 #
 # HISTORY
+# 0.4 - Add ability to change VM name
 # 0.3 - Pre check archives, add network hardware option, readonly verify mode
 # 0.2 - Added -t for hardware type and only update manifest if -m specified
 # 0.1 - Initial version, no options, simply updates signatures in manifest file
@@ -86,7 +87,7 @@ def checksha(filename, manifest, verbose):
 
 name = 'ovadoink'
 desc = 'swiss army knife for OVA manipulation'
-version = 0.3
+version = 0.4
 
 verbose = True
 verify = False
