@@ -194,13 +194,16 @@ if args.netif:
             x.attrib['type'] = args.netif
     xml.write(ovf)
 
-# rename VM if requested, and the name is in three places so far
+# rename VM if requested, and the name is in four places so far
 if args.rename:
     xml = ET.parse(ovf)
     nsf = re.compile(r'\{.*\}(.*)')
     for x in xml.iter():
         res = nsf.search(x.tag)
         if res.group(1) == "VirtualSystemIdentifier":
+            x.text = args.rename
+
+        if res.group(1) == "Name":
             x.text = args.rename
 
         if res.group(1) == "Machine":
