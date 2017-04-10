@@ -33,6 +33,7 @@
 # as the author needs them; suggestions and improvements are more than welcome.
 #
 # HISTORY
+# 0.5 - Make ability to change VM name work
 # 0.4 - Add ability to change VM name
 # 0.3 - Pre check archives, add network hardware option, readonly verify mode
 # 0.2 - Added -t for hardware type and only update manifest if -m specified
@@ -87,7 +88,7 @@ def checksha(filename, manifest, verbose):
 
 name = 'ovadoink'
 desc = 'swiss army knife for OVA manipulation'
-version = 0.4
+version = 0.5
 
 verbose = True
 verify = False
@@ -194,9 +195,14 @@ if args.netif:
             x.attrib['type'] = args.netif
     xml.write(ovf)
 
-# rename VM if requested, and the name is in four places so far
+# rename VM if wanted, name is at four XML spots, OVF and manifest file names
 if args.rename:
     xml = ET.parse(ovf)
+    os.remove(ovf)
+    flist.remove(ovf)
+    ovf = "%s.ovf" % (args.rename)
+    flist.insert(0, ovf)
+
     nsf = re.compile(r'\{.*\}(.*)')
     for x in xml.iter():
         res = nsf.search(x.tag)
