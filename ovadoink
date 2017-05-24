@@ -47,6 +47,8 @@
 # would probably be better served by moving to this one.
 #
 # TODO
+# Add memory setting parameter
+# Add ncpu parameter
 # Option for removing audio hardware
 # Verbose vs quiet
 
