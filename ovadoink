@@ -33,6 +33,7 @@
 # as the author needs them; suggestions and improvements are more than welcome.
 #
 # HISTORY
+# 0.6 - Add options for setting base system memory and processor core count
 # 0.5 - Make ability to change VM name work
 # 0.4 - Add ability to change VM name
 # 0.3 - Pre check archives, add network hardware option, readonly verify mode
@@ -47,8 +48,6 @@
 # would probably be better served by moving to this one.
 #
 # TODO
-# Add memory setting parameter
-# Add ncpu parameter
 # Option for removing audio hardware
 # Verbose vs quiet
 
@@ -90,7 +89,7 @@ def checksha(filename, manifest, verbose):
 
 name = 'ovadoink'
 desc = 'swiss army knife for OVA manipulation'
-version = 0.5
+version = 0.6
 
 verbose = True
 verify = False
@@ -101,6 +100,8 @@ if len(sys.argv) != 1 and sys.argv[1] == '--version':
     sys.exit(0)
 
 parser = argparse.ArgumentParser(description=desc)
+parser.add_argument('-b', '--basemem', help='set base memory in megabytes')
+parser.add_argument('-c', '--cpus', help='set cpu core count')
 parser.add_argument('-m', '--manifest', action='store_true', help='generate manifest')
 parser.add_argument('-n', '--netif', help='set interface type eg. "82540EM"')
 parser.add_argument('-t', '--type', metavar='HWTYPE', help='set hardware type eg. "vmx-11"')
@@ -109,7 +110,7 @@ parser.add_argument('ova', metavar='file.ova', help='file name')
 args = parser.parse_args()
 
 # somewhat convoluted, but set verify if no write options were specified
-if not args.type and not args.netif and not args.manifest and not args.rename:
+if not args.type and not args.netif and not args.manifest and not args.rename and not args.basemem and not args.cpus:
     verify = True
 
 # load up xml parser
@@ -196,6 +197,46 @@ if args.netif:
         if res.group(1) == "Adapter":
             x.attrib['type'] = args.netif
     xml.write(ovf)
+
+# change memory quantity
+if args.basemem:
+    if limited:
+        print "unable to change base memory without lxml package"
+    else:
+        nsf = re.compile(r'\{.*\}(.*)')
+        xml = ET.parse(ovf)
+        for x in xml.iter():
+            res = nsf.search(x.tag)
+            if res.group(1) == "ResourceType":
+                if x.text == "4":
+                    parent = next(x.iterancestors())
+                    for y in parent.iter():
+                        res = nsf.search(y.tag)
+                        if res.group(1) == "VirtualQuantity":
+                            y.text = args.basemem
+                        elif res.group(1) == "ElementName":
+                            y.text = "%sMB of memory" % (args.basemem)
+        xml.write(ovf)
+
+# change cpu core count
+if args.cpus:
+    if limited:
+        print "unable to change cpu core count without lxml package"
+    else:
+        nsf = re.compile(r'\{.*\}(.*)')
+        xml = ET.parse(ovf)
+        for x in xml.iter():
+            res = nsf.search(x.tag)
+            if res.group(1) == "ResourceType":
+                if x.text == "3":
+                    parent = next(x.iterancestors())
+                    for y in parent.iter():
+                        res = nsf.search(y.tag)
+                        if res.group(1) == "VirtualQuantity":
+                            y.text = args.cpus
+                        elif res.group(1) == "ElementName":
+                            y.text = "%s virtual CPU(s)" % (args.cpus)
+        xml.write(ovf)
 
 # rename VM if wanted, name is at four XML spots, OVF and manifest file names
 if args.rename:
