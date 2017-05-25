@@ -48,7 +48,6 @@
 # would probably be better served by moving to this one.
 #
 # TODO
-# Option for removing audio hardware
 # Verbose vs quiet
 
 import argparse
@@ -89,7 +88,7 @@ def checksha(filename, manifest, verbose):
 
 name = 'ovadoink'
 desc = 'swiss army knife for OVA manipulation'
-version = 0.6
+version = 0.7
 
 verbose = True
 verify = False
@@ -100,6 +99,7 @@ if len(sys.argv) != 1 and sys.argv[1] == '--version':
     sys.exit(0)
 
 parser = argparse.ArgumentParser(description=desc)
+parser.add_argument('-a', '--audiokill', action='store_true', help='remove audio devices')
 parser.add_argument('-b', '--basemem', help='set base memory in megabytes')
 parser.add_argument('-c', '--cpus', help='set cpu core count')
 parser.add_argument('-m', '--manifest', action='store_true', help='generate manifest')
@@ -110,7 +110,7 @@ parser.add_argument('ova', metavar='file.ova', help='file name')
 args = parser.parse_args()
 
 # somewhat convoluted, but set verify if no write options were specified
-if not args.type and not args.netif and not args.manifest and not args.rename and not args.basemem and not args.cpus:
+if not args.type and not args.netif and not args.manifest and not args.rename and not args.basemem and not args.cpus and not args.audiokill:
     verify = True
 
 # load up xml parser
@@ -237,6 +237,27 @@ if args.cpus:
                         elif res.group(1) == "ElementName":
                             y.text = "%s virtual CPU(s)" % (args.cpus)
         xml.write(ovf)
+
+# potentially remove audio devices
+if args.audiokill:
+    if limited:
+        print "unable to remove audio devices without lxml package"
+    else:
+        nsf = re.compile(r'\{.*\}(.*)')
+        xml = ET.parse(ovf)
+        for x in xml.iter():
+            res = nsf.search(x.tag)
+            if res.group(1) == "AudioAdapter":
+                parent = next(x.iterancestors())
+                parent.remove(x)
+
+        for x in xml.iter():
+            if x.text == "sound":
+                parent = next(x.iterancestors())
+                grandp = next(parent.iterancestors())
+                grandp.remove(parent)
+                xml.write(ovf)
+                break
 
 # rename VM if wanted, name is at four XML spots, OVF and manifest file names
 if args.rename:
